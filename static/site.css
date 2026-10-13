@@ -617,8 +617,23 @@ path.pf.is-empty { fill: var(--ash); transition: opacity 240ms var(--ease-out); 
 .me.has-art h2 { font-size: clamp(30px, 3.6vw, 44px); letter-spacing: .12em; }
 .me-lead { margin: 6px 0 18px !important; font: 400 clamp(18px, 1.8vw, 22px)/1.5 var(--f-brush) !important; color: var(--enji) !important; letter-spacing: .14em; }
 .me-body p { margin: 0 0 12px; color: var(--ink-2); font-size: 16.5px; line-height: 1.95; max-width: 34em; }
-.me-sign { margin: 18px 0 0 !important; line-height: 0; }
-.me-sign .seal { --fs: 17px; }
+/* 「酒酒」朱印蓋在名字旁，像落款 */
+.me-name { position: relative; display: inline-block; padding-right: .95em; }
+.me-seal { position: absolute; left: 100%; top: -.1em; margin-left: -.5em; line-height: 0; }
+.me-seal .seal { --fs: clamp(22px, 2.3vw, 28px); }
+/* 信箱與社群：圓形圖示按鈕，滑過顯示帳號 */
+.contact-links { display: flex; flex-wrap: wrap; gap: 10px; margin: 18px 0 0 !important; }
+.contact-links a {
+  display: grid; place-items: center; width: 44px; height: 44px; border-radius: 50%;
+  border: 1px solid var(--rule); background: var(--paper-2); color: var(--ink-2);
+  transition: border-color 160ms, color 160ms, transform 160ms var(--ease-out);
+}
+.contact-links svg { width: 21px; height: 21px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.contact-links a:hover, .contact-links a:focus-visible { border-color: var(--shu); color: var(--enji); transform: translateY(-1px); }
+.contact-links a:focus-visible { outline: 2px solid var(--shu); outline-offset: 2px; }
+.contact-links.is-foot { justify-content: center; margin: 14px 0 0 !important; }
+.contact-links.is-foot a { width: 38px; height: 38px; background: transparent; }
+.contact-links.is-foot svg { width: 18px; height: 18px; }
 /* 酒酒：坐在一輪和紙色的月亮前（深色模式也看得到黑貓） */
 .me-art { position: relative; margin: 0; aspect-ratio: 1; display: grid; place-items: end center; }
 .me-moon {
@@ -661,7 +676,21 @@ html:not(.js) .jj-sit, html:not(.js) .jj-eyes { display: none; }
 .me-link .ic { width: 16px; height: 16px; }
 .about .g-sec ul { padding-left: 1.2em; color: var(--ink-2); }
 .about .g-sec li { margin: 4px 0; }
-.score-help { justify-self: start; font-size: 12.5px; color: var(--ink-3); margin-top: 2px; }
+.scores { position: relative; }
+.score-help {
+  justify-self: start; margin-top: 2px; padding: 0; border: 0; background: none; cursor: pointer;
+  font: inherit; font-size: 12.5px; color: var(--ink-3); text-decoration: underline; text-underline-offset: 3px; text-decoration-color: var(--rule);
+}
+.score-help:hover, .score-help[aria-expanded="true"] { color: var(--enji); }
+/* 評分標準：在原地展開的小卡 */
+.score-pop {
+  grid-column: 1 / -1; margin-top: 8px; padding: 14px 16px; max-width: 30em;
+  border: 1px solid var(--rule); border-radius: 8px; background: var(--paper-2); box-shadow: var(--shadow);
+  font-size: 13.5px; line-height: 1.75; color: var(--ink-2);
+}
+.score-pop p { margin: 0 0 6px; } .score-pop p:last-child { margin: 8px 0 0; color: var(--ink-3); font-size: 12.5px; }
+.score-pop ul { margin: 0 0 8px; padding-left: 1.2em; }
+.score-pop strong { color: var(--ink); font-weight: 600; }
 @media (max-width: 720px) {
   .me-inner, .me.has-art .me-inner { grid-template-columns: 1fr; }
   .me.has-art .me-inner { justify-items: center; text-align: left; }
