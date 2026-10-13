@@ -26,7 +26,9 @@ SITE = {
     # 正式網址，例如 "https://sake-atlas.tw"。填了才會產生 sitemap.xml 與完整的分享預覽圖網址。
     "url": "",
     # 合作與品飲會聯絡信箱。留空時「關於」頁不顯示聯絡區塊。
-    "contact_email": "",
+    "contact_email": "jojosake1018@gmail.com",
+    # 社群帳號（顯示在首頁自我介紹、關於頁與頁尾）
+    "instagram": "https://www.instagram.com/jojos.sake/",
 }
 
 # 在 GitHub Actions 上建置時，網址與路徑前綴會自動帶入
@@ -894,6 +896,38 @@ def header_html(base, nav):
 </header>'''
 
 
+# 聯絡圖示（自繪的一般圖示：信封、相機；不使用任何品牌標誌）
+ICON_MAIL = ('<svg viewBox="0 0 24 24" aria-hidden="true"><rect x="3" y="5.5" width="18" height="13" rx="2.2"/>'
+             '<path d="M4 7.5l8 5.6 8-5.6"/></svg>')
+ICON_CAMERA = ('<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4.5 8.5h3l1.6-2.3h5.8l1.6 2.3h3a1.5 1.5 0 0 1 1.5 1.5v7.5'
+               'a1.5 1.5 0 0 1-1.5 1.5h-15A1.5 1.5 0 0 1 3 17.5V10a1.5 1.5 0 0 1 1.5-1.5z"/><circle cx="12" cy="13.3" r="3.4"/>'
+               '<path d="M6.2 11h1.2"/></svg>')
+
+
+def contact_links(cls="contact-links"):
+    """信箱與 IG（圖示按鈕）：首頁自我介紹、關於頁、頁尾共用。滑過顯示帳號與信箱。"""
+    out = []
+    if SITE.get("instagram"):
+        handle = "@" + SITE["instagram"].rstrip("/").rsplit("/", 1)[-1]
+        label = f"Instagram {handle}"
+        out.append(f'<a href="{esc(SITE["instagram"])}" target="_blank" rel="noopener" aria-label="{esc(label)}" title="{esc(label)}">{ICON_CAMERA}</a>')
+    if SITE.get("contact_email"):
+        label = f"寄信給我：{SITE['contact_email']}"
+        out.append(f'<a href="mailto:{esc(SITE["contact_email"])}" aria-label="{esc(label)}" title="{esc(label)}">{ICON_MAIL}</a>')
+    return f'<p class="{cls}">{"".join(out)}</p>' if out else ""
+
+
+SCORE_HELP = None
+
+
+def score_help_html():
+    """品飲紀錄裡的「評分標準」：在原地打開說明，不跳到別頁。"""
+    global SCORE_HELP
+    if SCORE_HELP is None:
+        SCORE_HELP = md_html(load_about().get("評分標準", ""))
+    return SCORE_HELP
+
+
 def footer_html(base):
     return f'''<footer class="foot">
   <p class="warn"><strong>禁止酒駕</strong><strong>飲酒過量，有害健康</strong><span>未滿十八歲請勿飲酒</span></p>
@@ -901,6 +935,7 @@ def footer_html(base):
     <p>每一款都是實際喝過後記下。酒款規格以對應批次的酒標為準。本站不販售任何酒類。</p>
     <p class="foot-links"><a href="{base}sake/">全部酒款</a><a href="{base}guide/">清酒入門</a><a href="{base}about/">關於這本圖鑑</a></p>
   </div>
+  {contact_links("contact-links is-foot")}
 </footer>'''
 
 
@@ -967,6 +1002,7 @@ def _inline(t):
     t = esc(t)
     t = re.sub(r"([\w.+-]+@[\w-]+\.[\w.-]+)", r'<a href="mailto:\1">\1</a>', t)
     t = re.sub(r"(https?://[^\s<]+)", r'<a href="\1" rel="noopener">\1</a>', t)
+    t = re.sub(r"\*\*(.+?)\*\*", r"<strong>\1</strong>", t)
     return t
 
 
@@ -1042,10 +1078,10 @@ def me_section(about, base):
   <div class="me-inner">
     {art}
     <div class="me-body">
-      <h2 id="me-h">{esc(title)}</h2>
+      <h2 id="me-h"><span class="me-name">{esc(title)}{f'<span class="me-seal">{seal(sign, tilt=-6)}</span>' if sign else ""}</span></h2>
       {f'<p class="me-lead">{esc(lead)}</p>' if lead else ""}
       {md_html(intro)}
-      {f'<p class="me-sign">{seal(sign, tilt=-4)}</p>' if sign else ""}
+      {contact_links("contact-links is-me")}
       {f'<p class="me-certs">{certs}</p>' if certs else ""}
     </div>
   </div>
@@ -1430,7 +1466,12 @@ def tasting_html(t, base):
         lines.append(f'<p class="t-after"><span>開瓶後</span>{flavor_mark(t["afterOpen"])}</p>')
     scores = score_html("喜歡程度", t.get("like")) + score_html("再喝意願", t.get("again"))
     if scores:
-        lines.append(f'<div class="scores">{scores}<a class="score-help" href="{base}about/#score">評分標準</a></div>')
+        help_html = score_help_html()
+        if help_html:
+            lines.append(f'<div class="scores">{scores}<button type="button" class="score-help" aria-expanded="false" data-score-help>評分標準</button>'
+                         f'<div class="score-pop" hidden>{help_html}</div></div>')
+        else:
+            lines.append(f'<div class="scores">{scores}</div>')
     ph = []
     for f in t.get("photos") or []:
         src = f if re.match(r"^https?://", f) else f"{base}assets/images/{f}"
@@ -2036,9 +2077,8 @@ def build_about(items, prefs, meta):
     me = about.get("關於我", "")
     certs = certs_html(about)
     score = about.get("評分標準", "")
-    contact = about.get("聯絡", "")
-    if not contact and SITE["contact_email"]:
-        contact = f"合作與品飲會洽詢：{SITE['contact_email']}"
+    contact = md_html(about.get("聯絡", "")) or ("<p>合作、品飲會與業配洽詢，歡迎來信或私訊 Instagram。</p>" if contact_links() else "")
+    contact += contact_links()
     body = f'''
 <article class="guide about">
   <header class="guide-head">
@@ -2049,13 +2089,9 @@ def build_about(items, prefs, meta):
   {f'<section class="g-sec" id="score"><h2>評分標準</h2>{md_html(score)}</section>' if score else ""}
   <section class="g-sec">
     <h2>怎麼記錄</h2>
-    <p>目前收錄 {len(items)} 款、{nbrew} 間酒造，橫跨 {sum(1 for p in prefs.values() if p["items"])} 個都道府縣，多數是在{esc(top)}等地喝到的。每一筆會記下品飲日期、是單杯還是整瓶、在哪裡喝，以及當下的心得與分數；規格則盡量對照酒造或進口商公開的資料。</p>
+    <p>目前收錄 {len(items)} 款、{nbrew} 間酒造，橫跨 {sum(1 for p in prefs.values() if p["items"])} 個都道府縣。每一筆會記下品飲日期、是單杯還是整瓶，以及當下的心得與分數；規格則盡量對照酒造或進口商公開的資料。</p>
   </section>
-  <section class="g-sec">
-    <h2>不會在這裡出現的</h2>
-    <p>這裡不賣酒，也不接受為了刊登而付費的推薦。評分不高的酒，一樣會留在圖鑑裡。</p>
-  </section>
-  {f'<section class="g-sec" id="contact"><h2>聯絡</h2>{md_html(contact)}</section>' if contact else ""}
+  {f'<section class="g-sec" id="contact"><h2>聯絡</h2>{contact}</section>' if contact else ""}
   <p class="t-sub">資料更新：{esc(meta.get("updated", ""))}</p>
 </article>
 '''
